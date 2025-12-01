@@ -34,7 +34,7 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
     
     # Security check - user can only view their own orders
-    if order.account.email != current_user.email:
+    if order.account_id != current_user.account_id:
         raise HTTPException(status_code=403, detail="Access denied")
     
     return order

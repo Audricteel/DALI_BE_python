@@ -441,7 +441,7 @@ Replace `1` with actual city_id from step 4.2
 ```json
 {
   "email": "admin@dali.com",
-  "password": "admin123"
+  "password": "password@1"
 }
 ```
 

@@ -23,7 +23,7 @@ class OrderService:
     ) -> Order:
         """Create a new order from cart items."""
         # Get user
-        user = db.query(Account).filter(Account.email == user_email).first()
+        user = db.query(Account).filter(Account.account_email == user_email).first()
         if not user:
             raise ValueError("User not found")
         
@@ -115,7 +115,7 @@ class OrderService:
     ) -> Order:
         """Create a pending order for payment gateway processing."""
         # Get user
-        user = db.query(Account).filter(Account.email == user_email).first()
+        user = db.query(Account).filter(Account.account_email == user_email).first()
         if not user:
             raise ValueError("User not found")
         
