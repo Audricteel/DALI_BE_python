@@ -1,0 +1,467 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { checkoutService, addressService, storeService } from '../services';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { AddressForm } from '../components';
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { cartItems, subtotal, clearCart } = useCart();
+
+  const [step, setStep] = useState('address'); // address, shipping, payment
+  const [addresses, setAddresses] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [deliveryMethod, setDeliveryMethod] = useState('Standard Delivery');
+  const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('Maya');
+  const [shipping, setShipping] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [addingAddress, setAddingAddress] = useState(false);
+
+  // Priority fee addition
+  const priorityFeeAddition = 150;
+
+  // Load checkout data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [addressesData, storesData] = await Promise.all([
+          addressService.getAddresses(),
+          storeService.getStores(),
+        ]);
+        setAddresses(addressesData);
+        setStores(storesData);
+
+        // Set default address
+        const defaultAddress = addressesData.find((a) => a.is_default);
+        if (defaultAddress) {
+          setSelectedAddressId(defaultAddress.address_id);
+        } else if (addressesData.length > 0) {
+          setSelectedAddressId(addressesData[0].address_id);
+        }
+
+        setTotal(subtotal);
+      } catch (err) {
+        console.error('Error loading checkout data:', err);
+        setError('Failed to load checkout data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [subtotal]);
+
+  // Recalculate total when shipping changes
+  useEffect(() => {
+    setTotal(subtotal + shipping);
+  }, [subtotal, shipping]);
+
+  const handleAddressSubmit = async () => {
+    if (!selectedAddressId) {
+      setError('Please select an address');
+      return;
+    }
+    try {
+      await checkoutService.setAddress(selectedAddressId);
+      setStep('shipping');
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to set address');
+    }
+  };
+
+  const handleShippingSubmit = async () => {
+    try {
+      const response = await checkoutService.setShipping(
+        deliveryMethod,
+        deliveryMethod === 'Pickup Delivery' ? selectedStoreId : null
+      );
+      setShipping(response.shipping_fee || 0);
+      setStep('payment');
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to set shipping');
+    }
+  };
+
+  const handleDeliveryMethodChange = (method) => {
+    setDeliveryMethod(method);
+    // Update shipping based on method
+    if (method === 'Pickup Delivery') {
+      setShipping(0);
+    } else if (method === 'Priority Delivery') {
+      setShipping(shipping + priorityFeeAddition);
+    }
+  };
+
+  const handlePaymentSubmit = async () => {
+    try {
+      setLoading(true);
+      const response = await checkoutService.placeOrder(paymentMethod);
+
+      // If Maya payment, redirect to payment URL
+      if (response.payment_url) {
+        window.location.href = response.payment_url;
+        return;
+      }
+
+      // COD - clear cart and redirect to success
+      await clearCart();
+      navigate('/order-success', { state: { orderId: response.order_id } });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to place order');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddressCreate = async (addressData) => {
+    const newAddress = await addressService.createAddress(addressData);
+    setAddresses([...addresses, newAddress]);
+    setSelectedAddressId(newAddress.address_id);
+    setAddingAddress(false);
+  };
+
+  const formatPrice = (price) => {
+    return `₱${price.toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  if (loading && step === 'address') {
+    return (
+      <div className="checkout-page-wrapper">
+        <div className="checkout-main-panel">
+          <p>Loading checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="checkout-page-wrapper">
+        <div className="checkout-main-panel">
+          <p>Your cart is empty.</p>
+          <Link to="/shop" className="btn btn-primary">
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="checkout-page-wrapper">
+      <div className="checkout-main-panel">
+        <div className="checkout-header">
+          <Link to="/" className="logo">
+            <img src="/images/dali-logo.png" alt="DALI Logo" />
+          </Link>
+          <div className="checkout-steps">
+            <span className={step === 'address' ? 'active' : ''}>Address</span> &gt;{' '}
+            <span className={step === 'shipping' ? 'active' : ''}>Shipping</span> &gt;{' '}
+            <span className={step === 'payment' ? 'active' : ''}>Payment</span>
+          </div>
+        </div>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        {/* Address Step */}
+        {step === 'address' && (
+          <div className="checkout-content">
+            <div className="checkout-section-header">
+              <h2>Shipping Information</h2>
+              <p className="sub-header">Select Saved Addresses</p>
+            </div>
+
+            <div className="address-selection">
+              {addresses.length === 0 && !addingAddress && (
+                <div className="no-address-notice">
+                  <p>You have no saved addresses. Please add one below to continue.</p>
+                </div>
+              )}
+
+              {addresses.map((addr) => (
+                <div key={addr.address_id} className="address-option">
+                  <input
+                    type="radio"
+                    name="addressId"
+                    value={addr.address_id}
+                    id={`addr-${addr.address_id}`}
+                    checked={selectedAddressId === addr.address_id}
+                    onChange={() => setSelectedAddressId(addr.address_id)}
+                  />
+                  <label htmlFor={`addr-${addr.address_id}`}>
+                    <div className="address-line-1">
+                      <div>
+                        <strong>
+                          {user?.first_name} {user?.last_name}
+                        </strong>
+                        <span>{addr.phone_number}</span>
+                      </div>
+                    </div>
+                    <p className="address-line-2">
+                      {addr.additional_info}
+                      {addr.barangay && `, ${addr.barangay.barangay_name}`}
+                      {addr.city && `, ${addr.city.city_name}`}
+                      {addr.province && `, ${addr.province.province_name}`}
+                    </p>
+                    <div className="address-tags">
+                      <span className="tag-home">HOME</span>
+                      {addr.is_default && <span className="tag-default">Default Address</span>}
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div id="add-address-target">
+              {addingAddress ? (
+                <AddressForm
+                  onSubmit={handleAddressCreate}
+                  onCancel={() => setAddingAddress(false)}
+                  submitLabel="Add Address"
+                />
+              ) : (
+                <button
+                  onClick={() => setAddingAddress(true)}
+                  className="add-new-address-link"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  + Add New Address
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={handleAddressSubmit}
+              className="btn btn-primary checkout-btn"
+              disabled={addresses.length === 0}
+            >
+              Proceed
+            </button>
+          </div>
+        )}
+
+        {/* Shipping Step */}
+        {step === 'shipping' && (
+          <div className="checkout-content">
+            <button
+              onClick={() => setStep('address')}
+              className="checkout-back-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              &lt; Back to Address
+            </button>
+            <h2>Delivery Option</h2>
+            <p className="sub-header">
+              Your shipping fee has been calculated based on your selected address.
+              Please choose a delivery type to continue.
+            </p>
+
+            <div className="shipping-fee-notice">
+              <p>Shipping fee is based on the distance from our warehouse to your location.</p>
+            </div>
+
+            <div className="delivery-selection">
+              <div className="delivery-option">
+                <input
+                  type="radio"
+                  name="deliveryMethod"
+                  value="Standard Delivery"
+                  id="del-standard"
+                  checked={deliveryMethod === 'Standard Delivery'}
+                  onChange={() => handleDeliveryMethodChange('Standard Delivery')}
+                />
+                <label htmlFor="del-standard">
+                  <strong>Standard Delivery</strong>
+                  <p>Within 2-3 days</p>
+                </label>
+              </div>
+              <div className="delivery-option">
+                <input
+                  type="radio"
+                  name="deliveryMethod"
+                  value="Priority Delivery"
+                  id="del-priority"
+                  checked={deliveryMethod === 'Priority Delivery'}
+                  onChange={() => handleDeliveryMethodChange('Priority Delivery')}
+                />
+                <label htmlFor="del-priority">
+                  <strong>Priority Delivery</strong>
+                  <p>Within the day (+{formatPrice(priorityFeeAddition)})</p>
+                </label>
+              </div>
+              <div className="delivery-option">
+                <input
+                  type="radio"
+                  name="deliveryMethod"
+                  value="Pickup Delivery"
+                  id="del-pickup"
+                  checked={deliveryMethod === 'Pickup Delivery'}
+                  onChange={() => handleDeliveryMethodChange('Pickup Delivery')}
+                />
+                <label htmlFor="del-pickup">
+                  <strong>Pickup Delivery</strong>
+                  <p>Pickup after 2-3 days</p>
+                </label>
+              </div>
+            </div>
+
+            {/* Store picker for pickup */}
+            {deliveryMethod === 'Pickup Delivery' && (
+              <div id="store-pickup-selector" style={{ display: 'block' }}>
+                <h4>Select Pickup Store</h4>
+                <div id="store-list-results">
+                  {stores.map((store) => (
+                    <div key={store.store_id} className="delivery-option">
+                      <input
+                        type="radio"
+                        name="storeId"
+                        value={store.store_id}
+                        id={`store-${store.store_id}`}
+                        checked={selectedStoreId === store.store_id}
+                        onChange={() => setSelectedStoreId(store.store_id)}
+                      />
+                      <label htmlFor={`store-${store.store_id}`}>
+                        <strong>{store.store_name}</strong>
+                        <p>{store.store_address}</p>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleShippingSubmit}
+              className="btn btn-primary checkout-btn"
+              disabled={deliveryMethod === 'Pickup Delivery' && !selectedStoreId}
+            >
+              Proceed
+            </button>
+          </div>
+        )}
+
+        {/* Payment Step */}
+        {step === 'payment' && (
+          <div className="checkout-content">
+            <button
+              onClick={() => setStep('shipping')}
+              className="checkout-back-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              &lt; Back to Shipping
+            </button>
+            <h2>Payment Methods</h2>
+
+            <div className="payment-selection">
+              <div className="payment-option">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="Cash on delivery (COD)"
+                  id="pay-cod"
+                  checked={paymentMethod === 'Cash on delivery (COD)'}
+                  onChange={() => setPaymentMethod('Cash on delivery (COD)')}
+                />
+                <label htmlFor="pay-cod">
+                  <img src="/images/cod.png" alt="COD" />
+                  <div>
+                    <strong>Cash on delivery (COD)</strong>
+                    <p>Pay upon receiving your order.</p>
+                  </div>
+                </label>
+              </div>
+              <div className="payment-option">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="Maya"
+                  id="pay-maya"
+                  checked={paymentMethod === 'Maya'}
+                  onChange={() => setPaymentMethod('Maya')}
+                />
+                <label htmlFor="pay-maya">
+                  <img src="/images/maya.png" alt="Maya" />
+                  <div>
+                    <strong>Maya</strong>
+                    <p>Pay with your Maya wallet.</p>
+                  </div>
+                </label>
+              </div>
+              <div className="payment-option">
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="Credit/Debit Card"
+                  id="pay-card"
+                  checked={paymentMethod === 'Credit/Debit Card'}
+                  onChange={() => setPaymentMethod('Credit/Debit Card')}
+                />
+                <label htmlFor="pay-card">
+                  <img src="/images/credit-card.png" alt="Card" />
+                  <div>
+                    <strong>Credit/Debit Card</strong>
+                    <p>Visa, Mastercard, etc. via Maya.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <button
+              onClick={handlePaymentSubmit}
+              className="btn btn-primary checkout-btn"
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : 'Place Order'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Order Summary Panel */}
+      <div className="checkout-summary-panel">
+        <h3>Your Cart</h3>
+        <div className="cart-items-summary">
+          {cartItems.map((item) => (
+            <div key={item.product_id} className="cart-item-summary-row">
+              <img src={item.image || `/images/products/default.png`} alt={item.product_name} />
+              <div className="item-details">
+                <p className="name">{item.product_name}</p>
+                <p className="qty">Qty: {item.quantity}</p>
+              </div>
+              <p className="price">{formatPrice(item.subtotal)}</p>
+            </div>
+          ))}
+        </div>
+        <hr />
+        <div className="summary-row">
+          <span>Subtotal</span>
+          <span>{formatPrice(subtotal)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Shipping</span>
+          <span id="shipping-display">
+            {shipping === 0 ? 'FREE' : formatPrice(shipping)}
+          </span>
+        </div>
+        <hr />
+        <div className="summary-row total-row">
+          <span>Total</span>
+          <span id="total-display">{formatPrice(total)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;

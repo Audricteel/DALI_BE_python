@@ -1,57 +1,79 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import HomePage from './pages/HomePage';
-import ShopPage from './pages/ShopPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import AccountPage from './pages/AccountPage';
-import OrderDetailsPage from './pages/OrderDetailsPage';
-import OrderSuccessPage from './pages/OrderSuccessPage';
-import StoreLocator from './pages/StoreLocator';
-import './App.css';
+import { Routes, Route } from 'react-router-dom'
+import Layout from './components/Layout'
+import AdminLayout from './components/AdminLayout'
+import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
+
+// Public Pages
+import Home from './pages/Home'
+import Shop from './pages/Shop'
+import ProductDetail from './pages/ProductDetail'
+import Cart from './pages/Cart'
+import Stores from './pages/Stores'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+
+// Protected Pages
+import Profile from './pages/Profile'
+import Checkout from './pages/Checkout'
+import OrderDetail from './pages/OrderDetail'
+import OrderSuccess from './pages/OrderSuccess'
+import PaymentSuccess from './pages/PaymentSuccess'
+import ChangePassword from './pages/ChangePassword'
+
+// Admin Pages
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminHome from './pages/admin/AdminHome'
+import AdminInventory from './pages/admin/AdminInventory'
+import AdminOrders from './pages/admin/AdminOrders'
+import AdminOrderDetail from './pages/admin/AdminOrderDetail'
+import AdminProductDetail from './pages/admin/AdminProductDetail'
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <Routes>
-            {/* Auth pages without navbar/footer */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            
-            {/* Main pages with navbar/footer */}
-            <Route
-              path="/*"
-              element={
-                <div className="app-layout">
-                  <Navbar />
-                  <main className="main-content">
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      <Route path="/shop" element={<ShopPage />} />
-                      <Route path="/stores" element={<StoreLocator />} />
-                      <Route path="/cart" element={<CartPage />} />
-                      <Route path="/checkout" element={<CheckoutPage />} />
-                      <Route path="/account" element={<AccountPage />} />
-                      <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
-                      <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </div>
-              }
-            />
-          </Routes>
-        </CartProvider>
-      </AuthProvider>
-    </Router>
-  );
+    <Routes>
+      {/* Public Routes with Main Layout */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/stores" element={<Stores />} />
+      </Route>
+
+      {/* Auth Pages (no layout) */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Protected Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/order/:id" element={<OrderDetail />} />
+          <Route path="/change-password" element={<ChangePassword />} />
+        </Route>
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminHome />} />
+          <Route path="/admin/inventory" element={<AdminInventory />} />
+          <Route path="/admin/inventory/:id" element={<AdminProductDetail />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/orders/:id" element={<AdminOrderDetail />} />
+        </Route>
+      </Route>
+    </Routes>
+  )
 }
 
-export default App;
+export default App

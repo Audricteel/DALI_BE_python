@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { adminAPI } from '../../api/api';
-import './AdminLogin.css';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminLogin = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { adminLogin } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
+  const from = location.state?.from?.pathname || '/admin';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,61 +20,66 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      await adminAPI.login({ email, password });
-      navigate('/admin/dashboard');
+      await adminLogin(email, password);
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid credentials');
+      setError(err.response?.data?.message || 'Invalid credentials provided.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="admin-login-page">
-      <nav className="admin-nav">
-        <Link to="/" className="admin-logo">
-          <div className="logo-icon">
-            <span className="logo-d">!</span>
-            <span className="logo-text">D</span>
+    <div className="admin-login-wrapper">
+      <div className="admin-login-card">
+        {/* Image Panel */}
+        <div className="admin-image-panel">
+          <Link to="/" className="back-to-shop-btn">
+            <span>&lt;</span> Back to shop
+          </Link>
+          <div className="cart-image-container">
+            <img src="/images/login.png" alt="Shopping Cart" />
           </div>
-          <span className="logo-name">DALI</span>
-        </Link>
-        <div className="admin-nav-links">
-          <span className="active">Admin Login</span>
-          <Link to="/login">User Login</Link>
+          <div></div>
         </div>
-      </nav>
 
-      <div className="admin-login-container">
-        <div className="admin-login-card">
-          <h1>Admin Login</h1>
-          <p>Sign in to access the admin dashboard</p>
+        {/* Form Panel */}
+        <div className="admin-form-panel">
+          <h2>Admin Login</h2>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Email</label>
               <input
                 type="email"
+                id="username"
+                name="username"
+                placeholder="Email"
+                className="form-control"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoFocus
               />
             </div>
-
             <div className="form-group">
-              <label>Password</label>
               <input
                 type="password"
+                id="password"
+                name="password"
+                placeholder="Password"
+                className="form-control"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
-
-            <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+            <Link to="/forgot-password" className="forgot-password-link">
+              Forgot Password?
+            </Link>
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
         </div>

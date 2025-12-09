@@ -1,55 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../api/api';
+import { authService } from '../services';
 
 const AuthContext = createContext(null);
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const response = await authAPI.getMe();
-      setUser(response.data);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email, password) => {
-    const response = await authAPI.login({ email, password });
-    setUser(response.data);
-    return response.data;
-  };
-
-  const register = async (data) => {
-    const response = await authAPI.register(data);
-    setUser(response.data);
-    return response.data;
-  };
-
-  const logout = async () => {
-    await authAPI.logout();
-    setUser(null);
-  };
-
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    checkAuth,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -58,3 +10,120 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Check user auth - backend uses session, try to get profile
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = await authService.getProfile();
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+      } catch (error) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
+        setUser(null);
+      }
+
+      try {
+        // Check admin auth
+        const storedAdmin = localStorage.getItem('admin');
+        if (storedAdmin) {
+          // Admin doesn't have a profile endpoint, just verify session is valid
+          setAdmin(JSON.parse(storedAdmin));
+        }
+      } catch (error) {
+        localStorage.removeItem('admin');
+        localStorage.removeItem('adminToken');
+        setAdmin(null);
+      }
+
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (email, password) => {
+    // Backend returns the user directly (AccountResponse)
+    const userData = await authService.login(email, password);
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    return userData;
+  };
+
+  const register = async (userData) => {
+    // Backend returns the user directly (AccountResponse)
+    const newUser = await authService.register(userData);
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    return newUser;
+  };
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+  };
+
+  const updateUser = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  // Admin authentication
+  const adminLogin = async (email, password) => {
+    // Backend returns { message, admin_email }
+    const response = await authService.adminLogin(email, password);
+    const adminData = { email: response.admin_email };
+    setAdmin(adminData);
+    localStorage.setItem('admin', JSON.stringify(adminData));
+    return response;
+  };
+
+  const adminLogout = async () => {
+    try {
+      await authService.adminLogout();
+    } catch (error) {
+      console.error('Admin logout error:', error);
+    }
+    setAdmin(null);
+    localStorage.removeItem('admin');
+    localStorage.removeItem('adminToken');
+  };
+
+  const value = {
+    user,
+    admin,
+    loading,
+    isAuthenticated: !!user,
+    isAdmin: !!admin,
+    login,
+    register,
+    logout,
+    updateUser,
+    adminLogin,
+    adminLogout,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContext;
