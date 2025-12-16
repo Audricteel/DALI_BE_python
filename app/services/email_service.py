@@ -11,6 +11,36 @@ class EmailService:
     """Service for sending emails."""
     
     @staticmethod
+    def send_verification_email(to_email: str, token: str, first_name: str = ""):
+        """Send email verification link to new user."""
+        verify_link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        
+        greeting = f"Hi {first_name}," if first_name else "Hi,"
+        
+        subject = "Verify Your Email - DALI E-Commerce"
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #D5A8B0;">DALI</h1>
+                </div>
+                <h2>Verify Your Email Address</h2>
+                <p>{greeting}</p>
+                <p>Thank you for creating an account with DALI E-Commerce!</p>
+                <p>Please click the button below to verify your email address:</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{verify_link}" style="background: #D5A8B0; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p><a href="{verify_link}">{verify_link}</a></p>
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">If you did not create an account, please ignore this email.</p>
+            </body>
+        </html>
+        """
+        
+        EmailService._send_email(to_email, subject, body)
+    
+    @staticmethod
     def send_password_reset_email(to_email: str, token: str):
         """Send password reset email with token link."""
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"

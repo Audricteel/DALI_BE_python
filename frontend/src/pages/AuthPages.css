@@ -259,6 +259,31 @@
   font-size: 0.9rem;
 }
 
+.error-message .resend-link {
+  display: block;
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  color: #a1127c;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.error-message .resend-link:hover {
+  color: #d91a5b;
+}
+
+.success-message {
+  background: #e6f9e6;
+  color: #0a6b0a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
 /* Buttons */
 .btn {
   padding: 0.75rem 2rem;
@@ -283,6 +308,142 @@
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Email Verification Styles */
+.verification-status {
+  text-align: center;
+  padding: 2rem;
+}
+
+.verification-status.verifying .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #D5A8B0;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.status-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 2.5rem;
+}
+
+.status-icon.success-icon {
+  background: #d4edda;
+  color: #28a745;
+}
+
+.status-icon.error-icon {
+  background: #f8d7da;
+  color: #dc3545;
+}
+
+.verification-status h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.verification-status p {
+  margin-bottom: 1.5rem;
+  color: #666;
+}
+
+/* Verification Banner */
+.verification-banner {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+  border-bottom: 1px solid #ffc107;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.verification-banner p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.verification-banner button {
+  background: #856404;
+  color: white;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.verification-banner button:hover {
+  background: #6d5303;
+}
+
+.verification-banner button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Email Verification Success Screen */
+.verification-success-screen {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.verification-success-screen .verification-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.verification-success-screen h1 {
+  color: #a1127c;
+  margin-bottom: 1rem;
+}
+
+.verification-success-screen .verification-message {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.verification-success-screen .verification-instructions {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.verification-success-screen .verification-note {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.verification-success-screen .verification-note strong {
+  display: block;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.verification-success-screen .verification-note p {
+  margin: 0;
 }
 
 /* Responsive */

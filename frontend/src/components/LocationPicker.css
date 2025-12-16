@@ -1,0 +1,96 @@
+/* Location Picker Component Styles */
+.location-picker {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.location-picker-header {
+  margin-bottom: 1rem;
+}
+
+.location-picker-header label {
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.location-picker-header .required {
+  color: #D5A8B0;
+}
+
+.location-picker-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.location-picker-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.location-picker-buttons .btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.location-picker-map {
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.location-picker-error {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.location-picker-coords {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.location-confirmed {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.location-picker-coords small {
+  color: #999;
+}
+
+.location-picker-warning {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* Custom marker styles */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Leaflet overrides for location picker */
+.location-picker .leaflet-container {
+  font-family: inherit;
+}
+
+.location-picker .leaflet-control-attribution {
+  font-size: 10px;
+}

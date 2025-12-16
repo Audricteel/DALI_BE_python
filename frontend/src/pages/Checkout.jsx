@@ -18,13 +18,14 @@ const Checkout = () => {
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('Maya');
   const [shipping, setShipping] = useState(0);
+  const [shippingDetails, setShippingDetails] = useState(null); // For fee breakdown
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingAddress, setAddingAddress] = useState(false);
 
-  // Priority fee addition
-  const priorityFeeAddition = 150;
+  // Priority fee addition (matches backend)
+  const priorityFeeAddition = 100;
 
   // Load checkout data
   useEffect(() => {
@@ -71,6 +72,8 @@ const Checkout = () => {
       await checkoutService.setAddress(selectedAddressId);
       setStep('shipping');
       setError('');
+      // Calculate initial shipping fee for default delivery method
+      calculateShippingFee(deliveryMethod);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to set address');
     }
@@ -90,14 +93,30 @@ const Checkout = () => {
     }
   };
 
-  const handleDeliveryMethodChange = (method) => {
-    setDeliveryMethod(method);
-    // Update shipping based on method
+  // Calculate shipping fee when delivery method changes
+  const calculateShippingFee = async (method) => {
     if (method === 'Pickup Delivery') {
       setShipping(0);
-    } else if (method === 'Priority Delivery') {
-      setShipping(shipping + priorityFeeAddition);
+      setShippingDetails(null);
+      return;
     }
+    try {
+      // Call backend to calculate fee without finalizing
+      const response = await checkoutService.setShipping(method, null);
+      setShipping(response.shipping_fee || 0);
+      setShippingDetails(response); // Store full details for breakdown display
+    } catch (err) {
+      console.error('Error calculating shipping:', err);
+      // Don't show error, just set a default
+      setShipping(0);
+      setShippingDetails(null);
+    }
+  };
+
+  const handleDeliveryMethodChange = (method) => {
+    setDeliveryMethod(method);
+    // Calculate shipping fee from backend
+    calculateShippingFee(method);
   };
 
   const handlePaymentSubmit = async () => {
@@ -123,7 +142,12 @@ const Checkout = () => {
 
   const handleAddressCreate = async (addressData) => {
     const newAddress = await addressService.createAddress(addressData);
-    setAddresses([...addresses, newAddress]);
+    // If new address is default, update other addresses
+    if (newAddress.is_default) {
+      setAddresses([...addresses.map(a => ({ ...a, is_default: false })), newAddress]);
+    } else {
+      setAddresses([...addresses, newAddress]);
+    }
     setSelectedAddressId(newAddress.address_id);
     setAddingAddress(false);
   };
@@ -267,9 +291,21 @@ const Checkout = () => {
               Please choose a delivery type to continue.
             </p>
 
-            <div className="shipping-fee-notice">
-              <p>Shipping fee is based on the distance from our warehouse to your location.</p>
-            </div>
+            {/* Shipping Fee Breakdown */}
+            {shippingDetails && shippingDetails.distance_km > 0 && (
+              <div className="shipping-fee-breakdown">
+                <h4>📍 Shipping Fee Calculation</h4>
+                <div className="breakdown-details">
+                  <p><span>Distance from warehouse:</span> <strong>{shippingDetails.distance_km.toFixed(1)} km</strong></p>
+                  <p><span>Base rate:</span> {formatPrice(shippingDetails.base_rate)}</p>
+                  <p><span>Distance charge ({formatPrice(shippingDetails.per_km_rate)}/km):</span> {formatPrice(shippingDetails.distance_km * shippingDetails.per_km_rate)}</p>
+                  {shippingDetails.priority_fee > 0 && (
+                    <p><span>Priority fee:</span> {formatPrice(shippingDetails.priority_fee)}</p>
+                  )}
+                  <p className="total-fee"><span>Total shipping:</span> <strong>{formatPrice(shippingDetails.shipping_fee)}</strong></p>
+                </div>
+              </div>
+            )}
 
             <div className="delivery-selection">
               <div className="delivery-option">

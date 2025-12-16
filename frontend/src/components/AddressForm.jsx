@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { locationService } from '../services';
+import LocationPicker from './LocationPicker';
+import './LocationPicker.css';
 
 const AddressForm = ({
   address = null,
@@ -22,7 +24,22 @@ const AddressForm = ({
   const [barangays, setBarangays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  
+  // Get selected names for geocoding
+  const getSelectedProvinceName = () => {
+    const province = provinces.find(p => p.province_id === parseInt(formData.province_id));
+    return province?.province_name || '';
+  };
+  
+  const getSelectedCityName = () => {
+    const city = cities.find(c => c.city_id === parseInt(formData.city_id));
+    return city?.city_name || '';
+  };
+  
+  const getSelectedBarangayName = () => {
+    const barangay = barangays.find(b => b.barangay_id === parseInt(formData.barangay_id));
+    return barangay?.barangay_name || '';
+  };
   // Load provinces on mount
   useEffect(() => {
     const loadProvinces = async () => {
@@ -100,20 +117,48 @@ const AddressForm = ({
         ...prev,
         city_id: '',
         barangay_id: '',
+        latitude: null,
+        longitude: null,
       }));
     }
     if (name === 'city_id') {
       setFormData((prev) => ({
         ...prev,
         barangay_id: '',
+        latitude: null,
+        longitude: null,
       }));
     }
+    if (name === 'barangay_id') {
+      // Reset coordinates when barangay changes so user re-pins
+      setFormData((prev) => ({
+        ...prev,
+        latitude: null,
+        longitude: null,
+      }));
+    }
+  };
+
+  // Handle location change from map picker
+  const handleLocationChange = (lat, lng) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validate that location is pinned
+    if (!formData.latitude || !formData.longitude) {
+      setError('Please pin your location on the map for accurate delivery fee calculation');
+      setLoading(false);
+      return;
+    }
 
     try {
       // Convert string IDs to integers for the backend
@@ -216,6 +261,18 @@ const AddressForm = ({
           </select>
         </div>
 
+        {/* Location Picker - shown after barangay is selected */}
+        {formData.barangay_id && (
+          <LocationPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onChange={handleLocationChange}
+            provinceName={getSelectedProvinceName()}
+            cityName={getSelectedCityName()}
+            barangayName={getSelectedBarangayName()}
+          />
+        )}
+
         <div className="form-group">
           <label htmlFor="additional_info">Street Address / Additional Info</label>
           <input
@@ -240,7 +297,7 @@ const AddressForm = ({
           <label htmlFor="is_default">Set as default address</label>
         </div>
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
+        <button type="submit" className="btn btn-primary" disabled={loading || !formData.latitude}>
           {loading ? 'Saving...' : submitLabel}
         </button>
       </form>

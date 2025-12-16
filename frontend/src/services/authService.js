@@ -57,6 +57,18 @@ const authService = {
     return response.data;
   },
 
+  // Verify email with token
+  verifyEmail: async (token) => {
+    const response = await api.post(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+    return response.data;
+  },
+
+  // Resend verification email
+  resendVerification: async () => {
+    const response = await api.post('/auth/resend-verification');
+    return response.data;
+  },
+
   // Admin login
   adminLogin: async (email, password) => {
     const response = await api.post('/admin/login', { email, password });

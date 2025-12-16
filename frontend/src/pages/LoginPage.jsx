@@ -1,29 +1,58 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services';
 import './AuthPages.css';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
+  const successMessage = location.state?.success;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+    setShowResendVerification(false);
     setLoading(true);
 
     try {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password');
+      const errorMsg = err.response?.data?.detail || 'Invalid email or password';
+      setError(errorMsg);
+      // Show resend verification link if it's an unverified email error
+      if (errorMsg.includes('verify your email')) {
+        setShowResendVerification(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await authService.resendVerification(email);
+      setSuccess('Verification email sent! Please check your inbox.');
+      setError('');
+      setShowResendVerification(false);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to resend verification email.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +88,23 @@ const LoginPage = () => {
           <div className="auth-form-content">
             <h1>Login</h1>
             
-            {error && <div className="error-message">{error}</div>}
+            {successMessage && <div className="success-message">{successMessage}</div>}
+            {success && <div className="success-message">{success}</div>}
+            {error && (
+              <div className="error-message">
+                {error}
+                {showResendVerification && (
+                  <button 
+                    type="button" 
+                    onClick={handleResendVerification}
+                    className="resend-link"
+                    disabled={loading}
+                  >
+                    Resend verification email
+                  </button>
+                )}
+              </div>
+            )}
             
             <form onSubmit={handleSubmit}>
               <div className="form-group">

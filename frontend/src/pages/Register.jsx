@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './AuthPages.css';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   // Password validation state
   const [passwordValidation, setPasswordValidation] = useState({
@@ -59,13 +61,54 @@ const Register = () => {
         phone_number: formData.phoneNumber,
       };
       await register(apiData);
-      navigate('/', { replace: true });
+      // Show success screen instead of redirecting to home
+      setRegistrationSuccess(true);
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Success screen after registration
+  if (registrationSuccess) {
+    return (
+      <div className="auth-page">
+        <nav className="auth-nav">
+          <Link to="/" className="auth-logo">
+            <div className="logo-icon">
+              <span className="logo-d">!</span>
+              <span className="logo-text">D</span>
+            </div>
+            <span className="logo-name">DALI</span>
+          </Link>
+        </nav>
+
+        <div className="auth-container">
+          <div className="auth-form-container" style={{ flex: 1, maxWidth: '600px', margin: '0 auto' }}>
+            <div className="auth-form-content verification-success-screen">
+              <div className="verification-icon">📧</div>
+              <h1>Check Your Email!</h1>
+              <p className="verification-message">
+                We've sent a verification link to <strong>{formData.email}</strong>
+              </p>
+              <p className="verification-instructions">
+                Please check your inbox and click the verification link to activate your account.
+                You won't be able to log in until your email is verified.
+              </p>
+              <div className="verification-note">
+                <strong>Didn't receive the email?</strong>
+                <p>Check your spam folder, or try logging in to resend the verification email.</p>
+              </div>
+              <Link to="/login" className="btn btn-primary">
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page-wrapper">

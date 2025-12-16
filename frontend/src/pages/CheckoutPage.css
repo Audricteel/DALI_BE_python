@@ -339,6 +339,56 @@
   text-align: center;
 }
 
+/* Shipping Fee Breakdown */
+.shipping-fee-breakdown {
+  background: linear-gradient(135deg, #fdf2f4 0%, #fff 100%);
+  border: 1px solid #D5A8B0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.shipping-fee-breakdown h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.breakdown-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breakdown-details p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.breakdown-details p span {
+  color: #555;
+}
+
+.breakdown-details p strong {
+  color: #333;
+}
+
+.breakdown-details .total-fee {
+  border-top: 1px solid #D5A8B0;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.breakdown-details .total-fee strong {
+  color: #a1127c;
+  font-size: 1.1rem;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .checkout-content {

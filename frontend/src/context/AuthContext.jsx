@@ -61,11 +61,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    // Backend returns the user directly (AccountResponse)
-    const newUser = await authService.register(userData);
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    return newUser;
+    // Backend returns a message (not user) - no auto-login until email verified
+    const response = await authService.register(userData);
+    // Don't set user - they need to verify email first
+    return response;
   };
 
   const logout = async () => {

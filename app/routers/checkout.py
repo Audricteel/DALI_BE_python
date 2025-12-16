@@ -192,11 +192,27 @@ async def calculate_shipping(
         raise HTTPException(status_code=404, detail="Address not found")
     
     if delivery_method == "Pickup Delivery":
-        shipping_fee = 0.0
-    else:
-        shipping_fee = ShippingService.calculate_shipping_fee(address, delivery_method)
+        return {
+            "delivery_method": delivery_method,
+            "shipping_fee": 0.0,
+            "distance_km": 0,
+            "base_rate": 0,
+            "per_km_rate": 0,
+            "priority_fee": 0
+        }
+    
+    # Calculate distance and fee breakdown
+    distance_km = ShippingService.calculate_distance(address)
+    base_rate = ShippingService.BASE_RATE
+    per_km_rate = ShippingService.PER_KM_RATE
+    priority_fee = ShippingService.PRIORITY_FEE_ADDITION if delivery_method == "Priority Delivery" else 0
+    shipping_fee = ShippingService.calculate_shipping_fee(address, delivery_method)
     
     return {
         "delivery_method": delivery_method,
-        "shipping_fee": shipping_fee
+        "shipping_fee": shipping_fee,
+        "distance_km": distance_km,
+        "base_rate": base_rate,
+        "per_km_rate": per_km_rate,
+        "priority_fee": priority_fee
     }

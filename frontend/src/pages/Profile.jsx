@@ -74,7 +74,12 @@ const Profile = () => {
 
   const handleAddressSubmit = async (addressData) => {
     const newAddress = await addressService.createAddress(addressData);
-    setAddresses([...addresses, newAddress]);
+    // If new address is default, update other addresses
+    if (newAddress.is_default) {
+      setAddresses([...addresses.map(a => ({ ...a, is_default: false })), newAddress]);
+    } else {
+      setAddresses([...addresses, newAddress]);
+    }
     setAddingAddress(false);
     setSuccessMessage('Address added successfully!');
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -85,11 +90,22 @@ const Profile = () => {
       editingAddress.address_id,
       addressData
     );
-    setAddresses(
-      addresses.map((a) =>
-        a.address_id === editingAddress.address_id ? updatedAddress : a
-      )
-    );
+    // If updated address is now default, update other addresses
+    if (updatedAddress.is_default) {
+      setAddresses(
+        addresses.map((a) =>
+          a.address_id === editingAddress.address_id 
+            ? updatedAddress 
+            : { ...a, is_default: false }
+        )
+      );
+    } else {
+      setAddresses(
+        addresses.map((a) =>
+          a.address_id === editingAddress.address_id ? updatedAddress : a
+        )
+      );
+    }
     setEditingAddress(null);
     setSuccessMessage('Address updated successfully!');
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -104,6 +120,22 @@ const Profile = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setErrorMessage(error.response?.data?.detail || 'Failed to delete address');
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId) => {
+    try {
+      await addressService.setDefaultAddress(addressId);
+      // Update local state to reflect default change
+      setAddresses(addresses.map((a) => ({
+        ...a,
+        is_default: a.address_id === addressId
+      })));
+      setSuccessMessage('Default address updated!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.detail || 'Failed to set default address');
       setTimeout(() => setErrorMessage(''), 3000);
     }
   };
@@ -232,6 +264,21 @@ const Profile = () => {
                           >
                             Edit
                           </button>
+                          {!addr.is_default && (
+                            <button
+                              onClick={() => handleSetDefaultAddress(addr.address_id)}
+                              className="edit-link"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                marginRight: '10px',
+                                color: '#28a745',
+                              }}
+                            >
+                              Set as Default
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteAddress(addr.address_id)}
                             className="edit-link"

@@ -115,6 +115,8 @@ class Account(Base):
     password_hash = Column(String(255), nullable=False)
     phone_number = Column(String(50))
     reset_password_token = Column(String(255))
+    is_email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String(255))
     
     # Relationships
     addresses = relationship("Address", back_populates="account", cascade="all, delete-orphan", order_by="Address.is_default.desc(), Address.address_id")

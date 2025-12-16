@@ -8,6 +8,7 @@ export { default as AdminRoute } from './AdminRoute';
 export { default as ProductCard } from './ProductCard';
 export { default as ProductGrid } from './ProductGrid';
 export { default as AddressForm } from './AddressForm';
+export { default as LocationPicker } from './LocationPicker';
 export { default as OrderTimeline } from './OrderTimeline';
 export { default as OrderCard } from './OrderCard';
 export { default as StoreMap } from './StoreMap';
