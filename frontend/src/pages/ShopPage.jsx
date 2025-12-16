@@ -229,7 +229,7 @@ const ShopPage = () => {
                 {products.map((product) => (
                   <div key={product.product_id} className="product-card">
                     <img
-                      src={product.image || `https://via.placeholder.com/200x200?text=${encodeURIComponent(product.product_name)}`}
+                      src={product.image ? `/images/products/${product.image}` : `/images/products/default.png`}
                       alt={product.product_name}
                       className="product-image"
                     />

@@ -91,7 +91,7 @@ const ProductDetail = () => {
       {/* Product Image */}
       <div className="product-detail-image">
         <img
-          src={product.image || `/images/products/default.png`}
+          src={product.image ? `/images/products/${product.image}` : `/images/products/default.png`}
           alt={product.product_name}
         />
       </div>

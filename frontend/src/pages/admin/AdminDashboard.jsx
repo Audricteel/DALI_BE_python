@@ -334,7 +334,7 @@ const AdminDashboard = () => {
                     <td>
                       <div className="product-cell">
                         <img 
-                          src={product.image || 'https://via.placeholder.com/40x40?text=P'} 
+                          src={product.image ? `/images/products/${product.image}` : `/images/products/default.png`} 
                           alt={product.product_name}
                         />
                         <span>{product.product_name}</span>

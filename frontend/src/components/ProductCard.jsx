@@ -31,7 +31,7 @@ const ProductCard = ({ product, availableToAdd = null }) => {
       <Link className="product-card-body" to={`/product/${product.product_id}`}>
         <div className="product-image-container">
           <img
-            src={product.image || `/images/products/default.png`}
+            src={product.image ? `/images/products/${product.image}` : `/images/products/default.png`}
             alt={product.product_name}
           />
         </div>

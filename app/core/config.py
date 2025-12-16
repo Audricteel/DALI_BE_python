@@ -33,10 +33,10 @@ class Settings(BaseSettings):
     MAYA_PUBLIC_KEY: str = ""
     
     # Application URLs
-    FRONTEND_URL: str = "http://localhost:8000"
-    PAYMENT_SUCCESS_URL: str = "http://localhost:8000/payment/callback/success"
-    PAYMENT_FAILURE_URL: str = "http://localhost:8000/payment/callback/failure"
-    PAYMENT_CANCEL_URL: str = "http://localhost:8000/payment/callback/cancel"
+    FRONTEND_URL: str = "http://localhost:5173"
+    PAYMENT_SUCCESS_URL: str = "http://localhost:5173/payment/callback/success"
+    PAYMENT_FAILURE_URL: str = "http://localhost:5173/payment/callback/failure"
+    PAYMENT_CANCEL_URL: str = "http://localhost:5173/payment/callback/cancel"
     
     # Warehouse Location
     WAREHOUSE_LAT: float = 14.5995
