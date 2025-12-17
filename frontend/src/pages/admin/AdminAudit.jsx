@@ -194,10 +194,11 @@ const AdminAudit = () => {
                   const actor = details.actor_name || a.actor_email || 'System';
                   const product = details.product_name || details.product_title || details.name || details.product || details.title || details.sku || `${a.entity_type || 'Item'} ${a.entity_id? `#${a.entity_id}`:''}`;
                   
-                  // Extract values based on naming conventions
-                  const before = details.before ?? details.old_value ?? details.old_price ?? details.old_stock ?? '';
-                  const after = details.after ?? details.new_value ?? details.new_price ?? details.new_stock ?? '';
+                  // Extract values based on naming conventions (support several key names)
+                  const before = details.before ?? details.old_value ?? details.old_price ?? details.old_stock ?? details.old_quantity ?? details.old_qty ?? '';
+                  const after = details.after ?? details.new_value ?? details.new_price ?? details.new_stock ?? details.new_quantity ?? details.new_qty ?? '';
                   const isPrice = (a.action || '').toLowerCase().includes('price');
+                  const isStock = (a.action || '').toLowerCase().includes('stock');
 
                   const delta = (()=>{
                     if (before === '' || after === '') return '';
@@ -231,16 +232,16 @@ const AdminAudit = () => {
                         {details.sku && <div style={{ fontSize: '0.75rem', color: '#888', fontFamily: 'monospace' }}>SKU: {details.sku}</div>}
                       </td>
                       <td className="diff-val">
-                        {isPrice ? formatPrice(before) : String(before||'—')}
+                        {before === '' ? '—' : isPrice ? formatPrice(before) : String(before)}
                       </td>
                       <td className="diff-val">
-                        {isPrice ? formatPrice(after) : String(after||'—')}
+                        {after === '' ? '—' : isPrice ? formatPrice(after) : String(after)}
                       </td>
                       <td className="diff-val">
                         {delta !== '' ? (
                           <span className={delta > 0 ? 'diff-up' : delta < 0 ? 'diff-down' : 'diff-neutral'}>
                             {delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : ''}
-                            {Math.abs(delta)}
+                            {isPrice ? formatPrice(Math.abs(delta)) : Math.abs(delta)}
                           </span>
                         ) : '—'}
                       </td>
