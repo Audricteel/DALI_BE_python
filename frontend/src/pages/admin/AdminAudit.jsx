@@ -32,6 +32,8 @@ const AdminAudit = () => {
   const [eventFilter, setEventFilter] = useState('all');
   const [range, setRange] = useState('30d');
   const [productNames, setProductNames] = useState({});
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchAudits = async () => {
     setLoading(true);
@@ -130,6 +132,18 @@ const AdminAudit = () => {
     }).sort((x,y)=> new Date(y.created_at) - new Date(x.created_at));
   }, [audits, q, eventFilter, range, productNames]);
 
+  // reset to first page whenever filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [q, eventFilter, range, audits]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   return (
     <div className="container admin-audit-page">
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}></div>
@@ -225,7 +239,7 @@ const AdminAudit = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => {
+                {paginated.map((a) => {
                   let details = {};
                   try { 
                     details = a.details ? (typeof a.details === 'string' ? JSON.parse(a.details) : a.details) : {}; 
@@ -302,6 +316,17 @@ const AdminAudit = () => {
                 })}
               </tbody>
             </table>
+            {/* Pagination Controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <div style={{ color: '#666' }}>
+                Showing {(filtered.length === 0) ? 0 : ( (page - 1) * itemsPerPage + 1 )} - {Math.min(page * itemsPerPage, filtered.length)} of {filtered.length}
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button className="btn btn-outline btn-small" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</button>
+                <div style={{ fontSize: '0.9rem', color: '#333' }}>Page {page} of {totalPages}</div>
+                <button className="btn btn-outline btn-small" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</button>
+              </div>
+            </div>
           </div>
         )}
       </div>
