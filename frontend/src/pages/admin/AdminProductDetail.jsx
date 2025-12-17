@@ -209,6 +209,27 @@ const AdminProductDetail = () => {
             </div>
           )}
         </div>
+        {isSuperAdmin && (
+          <div style={{ marginTop: '24px' }}>
+            <button
+              className="btn"
+              style={{ backgroundColor: '#dc3545', color: 'white', padding: '10px 16px', borderRadius: 6 }}
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+                try {
+                  await adminService.deleteProduct(id);
+                  // navigate back to inventory after deletion
+                  navigate('/admin/inventory');
+                } catch (err) {
+                  console.error('Failed to delete product', err);
+                  setError(err.response?.data?.detail || 'Failed to delete product');
+                }
+              }}
+            >
+              Delete Product
+            </button>
+          </div>
+        )}
 
         <div className="product-description" style={{ marginTop: '30px' }}>
           <h3>Product Details</h3>

@@ -89,6 +89,12 @@ const adminService = {
     });
     return response.data;
   },
+  
+  // Delete a product (super admin only)
+  deleteProduct: async (productId) => {
+    const response = await api.delete(`/admin/products/${productId}`);
+    return response.data;
+  },
 };
 
 export default adminService;

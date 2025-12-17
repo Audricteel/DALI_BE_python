@@ -359,6 +359,69 @@ async def update_product(
     return {"message": "Product updated", "product_id": product_id, "changes": changes}
 
 
+@router.delete("/products/{product_id}")
+async def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """Delete a product (super-admin only). Removes image file when possible and logs an audit entry."""
+    if not getattr(admin, 'is_super_admin', False):
+        raise HTTPException(status_code=403, detail="Super admin privileges required")
+
+    product = db.query(Product).filter(Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # capture product snapshot for audit
+    snapshot = {
+        'product_id': product.product_id,
+        'product_name': product.product_name,
+        'product_description': product.product_description,
+        'product_category': product.product_category,
+        'product_subcategory': product.product_subcategory,
+        'product_price': float(product.product_price) if product.product_price is not None else None,
+        'product_quantity': product.product_quantity,
+        'image': product.image,
+    }
+
+    # attempt to remove image file
+    try:
+        if product.image:
+            img_path = os.path.join(os.getcwd(), 'frontend', 'public', 'images', 'products', product.image)
+            if os.path.exists(img_path):
+                os.remove(img_path)
+    except Exception:
+        # non-fatal
+        pass
+
+    try:
+        db.delete(product)
+        db.commit()
+
+        # write audit log
+        actor_email = getattr(admin, 'account_email', None) or getattr(admin, 'email', None) or 'unknown'
+        actor = db.query(Account).filter(Account.account_email == actor_email).first()
+        actor_name = actor.full_name if actor else None
+        audit_details = {'deleted_product': snapshot}
+        if actor_name:
+            audit_details['actor_name'] = actor_name
+        audit = AuditLog(
+            actor_email=actor_email,
+            action='DELETE_PRODUCT',
+            entity_type='product',
+            entity_id=product_id,
+            details=json.dumps(audit_details)
+        )
+        db.add(audit)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail='Failed to delete product')
+
+    return {"message": "Product deleted", "product_id": product_id}
+
+
 @router.get("/orders", response_model=List[OrderResponse])
 async def get_all_orders(
     search: Optional[str] = Query(None),
