@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models import Account
 from app.core.security import get_password_hash, verify_password
 from app.schemas import AccountCreate, AccountUpdate
+from app.services.email_service import EmailService
 import uuid
 
 
@@ -20,20 +21,73 @@ class AccountService:
         if existing:
             raise ValueError("Email already registered")
         
+        # Generate verification token
+        verification_token = str(uuid.uuid4())
+        
         # Create new account
         account = Account(
             account_email=account_data.email,
             password_hash=get_password_hash(account_data.password),
             account_first_name=account_data.first_name,
             account_last_name=account_data.last_name,
-            phone_number=account_data.phone_number
+            phone_number=account_data.phone_number,
+            is_email_verified=False,
+            email_verification_token=verification_token
         )
         
         db.add(account)
         db.commit()
         db.refresh(account)
         
+        # Send verification email
+        EmailService.send_verification_email(
+            to_email=account.account_email,
+            token=verification_token,
+            first_name=account.account_first_name or ""
+        )
+        
         return account
+    
+    @staticmethod
+    def verify_email(db: Session, token: str) -> Account:
+        """Verify user email with token."""
+        account = db.query(Account).filter(
+            Account.email_verification_token == token
+        ).first()
+        
+        if not account:
+            raise ValueError("Invalid or expired verification token")
+        
+        account.is_email_verified = True
+        account.email_verification_token = None  # Clear token after use
+        
+        db.commit()
+        db.refresh(account)
+        
+        return account
+    
+    @staticmethod
+    def resend_verification_email(db: Session, email: str):
+        """Resend verification email to user."""
+        account = AccountService.get_by_email(db, email)
+        if not account:
+            raise ValueError("Account not found")
+        
+        if account.is_email_verified:
+            raise ValueError("Email is already verified")
+        
+        # Generate new token
+        verification_token = str(uuid.uuid4())
+        account.email_verification_token = verification_token
+        
+        db.commit()
+        
+        # Send verification email
+        EmailService.send_verification_email(
+            to_email=account.account_email,
+            token=verification_token,
+            first_name=account.account_first_name or ""
+        )
     
     @staticmethod
     def authenticate_user(db: Session, email: str, password: str) -> Optional[Account]:

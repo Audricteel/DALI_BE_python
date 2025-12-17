@@ -16,7 +16,7 @@ from app.schemas import (
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=AccountResponse)
+@router.post("/register")
 async def register(
     request: Request,
     account_data: AccountCreate,
@@ -26,13 +26,11 @@ async def register(
     try:
         account = AccountService.create_account(db, account_data)
         
-        # Auto-login user
-        request.session["user_email"] = account.email
-        
-        # Merge session cart with user cart
-        CartService.merge_session_cart_with_db_cart(db, request, account.email)
-        
-        return account
+        # Don't auto-login - user must verify email first
+        return {
+            "message": "Registration successful! Please check your email to verify your account before logging in.",
+            "email": account.email
+        }
         
     except ValueError as e:
         raise HTTPException(
@@ -54,6 +52,13 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+    
+    # Check if email is verified
+    if not user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in. Check your inbox for the verification link."
         )
     
     # Set session
@@ -154,6 +159,41 @@ async def reset_password(
     try:
         AccountService.reset_password(db, reset_data.token, reset_data.password)
         return {"message": "Password reset successfully. Please log in."}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.post("/verify-email")
+async def verify_email(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Verify email address using token from verification link."""
+    try:
+        account = AccountService.verify_email(db, token)
+        return {
+            "message": "Email verified successfully! You can now use all features.",
+            "email": account.account_email
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_required)
+):
+    """Resend verification email to current user."""
+    try:
+        AccountService.resend_verification_email(db, current_user.email)
+        return {"message": "Verification email sent! Please check your inbox."}
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -60,7 +60,9 @@ CREATE TABLE accounts (
                           account_email       VARCHAR(255) UNIQUE NOT NULL,
                           password_hash       VARCHAR(255) NOT NULL,
                           phone_number        VARCHAR(50),
-                          reset_password_token VARCHAR(255)
+                          reset_password_token VARCHAR(255),
+                          is_email_verified   BOOLEAN DEFAULT FALSE,
+                          email_verification_token VARCHAR(255)
 );
 
 CREATE TABLE admin_accounts (
@@ -95,7 +97,7 @@ CREATE TABLE orders (
                         order_id                SERIAL PRIMARY KEY,
                         account_id              INTEGER NOT NULL REFERENCES accounts(account_id) ON DELETE CASCADE,
                         address_id              INTEGER NOT NULL REFERENCES addresses(address_id),
-                        payment_status          VARCHAR(255) NOT NULL CHECK (payment_status IN ('PENDING', 'PAID', 'CANCELLED')),
+                        payment_status          VARCHAR(255) NOT NULL CHECK (payment_status IN ('PENDING', 'PAID', 'CANCELLED', 'REFUNDED')),
                         shipping_status         VARCHAR(255) NOT NULL CHECK (shipping_status IN ('PROCESSING', 'PREPARING_FOR_SHIPMENT', 'IN_TRANSIT', 'DELIVERED', 'COLLECTED', 'CANCELLED', 'DELIVERY_FAILED')),
                         payment_transaction_id  VARCHAR(255),
                         delivery_method         VARCHAR(255) NOT NULL,

@@ -13,6 +13,7 @@ class PaymentStatusEnum(str, Enum):
     PENDING = "PENDING"
     PAID = "PAID"
     CANCELLED = "CANCELLED"
+    REFUNDED = "REFUNDED"
 
 
 class ShippingStatusEnum(str, Enum):
@@ -71,6 +72,7 @@ class PasswordReset(BaseModel):
 
 class AccountResponse(AccountBase):
     account_id: int
+    is_email_verified: bool = False
     
     class Config:
         from_attributes = True

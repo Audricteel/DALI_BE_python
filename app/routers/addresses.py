@@ -46,6 +46,13 @@ async def create_address(
     current_user = Depends(get_current_user_required)
 ):
     """Create new address."""
+    # If this is set as default, unset other defaults first
+    if address_data.is_default:
+        db.query(Address).filter(
+            Address.account_id == current_user.account_id,
+            Address.is_default == True
+        ).update({"is_default": False})
+    
     address = Address(
         account_id=current_user.account_id,
         province_id=address_data.province_id,
@@ -97,8 +104,45 @@ async def update_address(
     if address_data.longitude is not None:
         address.longitude = address_data.longitude
     if address_data.is_default is not None:
+        # If setting as default, unset other defaults first
+        if address_data.is_default:
+            db.query(Address).filter(
+                Address.account_id == current_user.account_id,
+                Address.address_id != address_id,
+                Address.is_default == True
+            ).update({"is_default": False})
         address.is_default = address_data.is_default
     
+    db.commit()
+    db.refresh(address)
+    
+    return address
+
+
+@router.post("/{address_id}/default", response_model=AddressResponse)
+async def set_default_address(
+    address_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_required)
+):
+    """Set address as default."""
+    address = db.query(Address).filter(
+        Address.address_id == address_id,
+        Address.account_id == current_user.account_id
+    ).first()
+    
+    if not address:
+        raise HTTPException(status_code=404, detail="Address not found")
+    
+    # Unset other defaults
+    db.query(Address).filter(
+        Address.account_id == current_user.account_id,
+        Address.address_id != address_id,
+        Address.is_default == True
+    ).update({"is_default": False})
+    
+    # Set this address as default
+    address.is_default = True
     db.commit()
     db.refresh(address)
     
