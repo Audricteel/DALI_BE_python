@@ -57,6 +57,23 @@ const adminService = {
     });
     return response.data;
   },
+
+  // Add new product (multipart/form-data with optional image)
+  addProduct: async (product) => {
+    const form = new FormData();
+    form.append('product_name', product.product_name);
+    if (product.product_description) form.append('product_description', product.product_description);
+    form.append('product_price', String(product.product_price));
+    if (product.product_category) form.append('product_category', product.product_category);
+    if (product.product_subcategory) form.append('product_subcategory', product.product_subcategory);
+    form.append('product_quantity', String(product.product_quantity));
+    if (product.imageFile) form.append('image', product.imageFile);
+
+    const response = await api.post('/admin/products', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 
 export default adminService;

@@ -83,7 +83,7 @@ const AdminAudit = () => {
     })();
 
     return () => { cancelled = true; };
-  }, [audits, productNames]);
+  }, [audits]);
 
   const stats = useMemo(() => {
     const total = audits.length;
@@ -238,10 +238,19 @@ const AdminAudit = () => {
                   const product = productFromDetails || productNames[a.entity_id] || `${a.entity_type || 'Item'} ${a.entity_id? `#${a.entity_id}`:''}`;
                   
                   // Extract values based on naming conventions (support several key names)
-                  const before = details.before ?? details.old_value ?? details.old_price ?? details.old_stock ?? details.old_quantity ?? details.old_qty ?? '';
-                  const after = details.after ?? details.new_value ?? details.new_price ?? details.new_stock ?? details.new_quantity ?? details.new_qty ?? '';
-                  const isPrice = (a.action || '').toLowerCase().includes('price');
-                  const isStock = (a.action || '').toLowerCase().includes('stock');
+                  const actionLower = (a.action || '').toLowerCase();
+                  let before;
+                  let after;
+                  if (actionLower.includes('create')) {
+                    // New product: before defaults to 0, after should prefer created quantity
+                    before = details.old_quantity ?? details.old_qty ?? details.old_value ?? details.old_price ?? 0;
+                    after = details.new_quantity ?? details.quantity ?? details.product_quantity ?? details.new_value ?? details.new_price ?? details.price ?? '';
+                  } else {
+                    before = details.before ?? details.old_value ?? details.old_price ?? details.old_stock ?? details.old_quantity ?? details.old_qty ?? details.price ?? details.quantity ?? '';
+                    after = details.after ?? details.new_value ?? details.new_price ?? details.new_stock ?? details.new_quantity ?? details.new_qty ?? details.price ?? details.quantity ?? '';
+                  }
+                  const isPrice = actionLower.includes('price');
+                  const isStock = actionLower.includes('stock');
 
                   const delta = (()=>{
                     if (before === '' || after === '') return '';

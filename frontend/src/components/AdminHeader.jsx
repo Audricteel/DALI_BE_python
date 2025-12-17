@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const AdminHeader = () => {
-  const { admin, adminLogout } = useAuth();
+  const { admin, adminLogout, isSuperAdmin } = useAuth();
 
   const handleLogout = async (e) => {
     e.preventDefault();
@@ -20,6 +20,7 @@ const AdminHeader = () => {
           </div>
           <nav className="nav">
             <Link to="/admin/inventory">Inventory</Link>
+            {isSuperAdmin && <Link to="/admin/add-product">Add Product</Link>}
             <Link to="/admin/orders">Orders</Link>
             <Link to="/admin/audit">Audit</Link>
           </nav>

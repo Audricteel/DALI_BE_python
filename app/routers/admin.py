@@ -1,15 +1,17 @@
 """
 Admin router - handles admin panel functionality (JSON API).
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, or_
 from typing import Optional, List
 from app.core.database import get_db
 from app.core.security import get_current_admin, verify_password
 import json
+import os
+import uuid
 from app.models import Product, Order, AdminAccount, ShippingStatus, Account, AuditLog
-from app.schemas import OrderResponse, ProductResponse, LoginRequest
+from app.schemas import OrderResponse, ProductResponse, LoginRequest, ProductCreate
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -110,6 +112,89 @@ async def get_product_detail(
     product = db.query(Product).filter(Product.product_id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
+@router.post("/products", response_model=ProductResponse)
+async def create_product(
+    product_name: str = Form(...),
+    product_description: str = Form(None),
+    product_price: float = Form(...),
+    product_category: str = Form(None),
+    product_subcategory: str = Form(None),
+    product_quantity: int = Form(...),
+    image: UploadFile = File(None),
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """Create a new product (super-admin only). Accepts multipart/form-data with optional image."""
+    if not getattr(admin, 'is_super_admin', False):
+        raise HTTPException(status_code=403, detail="Super admin privileges required")
+
+    # handle image upload (store under frontend/public/images/products)
+    image_url = None
+    stored_image_name = None
+    if image:
+        try:
+            images_dir = os.path.join(os.getcwd(), 'frontend', 'public', 'images', 'products')
+            os.makedirs(images_dir, exist_ok=True)
+            orig_name = os.path.basename(image.filename)
+            ext = os.path.splitext(orig_name)[1]
+            fname = f"{uuid.uuid4().hex}{ext}"
+            dest = os.path.join(images_dir, fname)
+            content = await image.read()
+            with open(dest, 'wb') as f:
+                f.write(content)
+            # URL used by clients is /images/products/<fname>
+            image_url = f"/images/products/{fname}"
+            # store only the filename in the DB to avoid double-prefixing on frontend
+            stored_image_name = fname
+        except Exception:
+            image_url = None
+            stored_image_name = None
+
+    product = Product(
+        product_name=product_name,
+        product_description=product_description,
+        product_price=product_price,
+        product_category=product_category,
+        product_subcategory=product_subcategory,
+        product_quantity=product_quantity,
+        image=stored_image_name if stored_image_name else None,
+    )
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+
+    # Audit log for product creation
+    try:
+        actor_email = getattr(admin, 'account_email', None) or getattr(admin, 'email', None) or 'unknown'
+        actor = db.query(Account).filter(Account.account_email == actor_email).first()
+        actor_name = actor.full_name if actor else None
+        # For CREATE_PRODUCT include explicit before/after fields so frontend can render diffs
+        audit_details = {
+            'product_id': product.product_id,
+            'product_name': product.product_name,
+            'sku': None,
+            'old_price': 0.0,
+            'new_price': float(product.product_price),
+            'old_quantity': 0,
+            'new_quantity': int(product.product_quantity),
+        }
+        if actor_name:
+            audit_details['actor_name'] = actor_name
+        audit = AuditLog(
+            actor_email=actor_email,
+            action='CREATE_PRODUCT',
+            entity_type='product',
+            entity_id=product.product_id,
+            details=json.dumps(audit_details)
+        )
+        db.add(audit)
+        db.commit()
+    except Exception:
+        db.rollback()
+
     return product
 
 

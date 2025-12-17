@@ -82,6 +82,7 @@ export const adminAPI = {
   logout: () => api.post('/admin/logout'),
   getInventory: (params) => api.get('/admin/inventory', { params }),
   getProduct: (id) => api.get(`/admin/products/${id}`),
+  addProduct: (data) => api.post('/admin/products', data),
   updateStock: (id, quantity) => api.put(`/admin/products/${id}/stock`, { quantity }),
   getOrders: (search) => api.get('/admin/orders', { params: { search } }),
   getOrder: (id) => api.get(`/admin/orders/${id}`),
