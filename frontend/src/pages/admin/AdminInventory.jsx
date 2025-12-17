@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { productService } from '../../services';
 import { useAuth } from '../../context/AuthContext';
-import EditPriceModal from '../../components/EditPriceModal';
-import adminService from '../../services/adminService';
 
 const AdminInventory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,8 +16,7 @@ const AdminInventory = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(
     searchParams.get('subcategory') || ''
   );
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  
   const [stockFilter, setStockFilter] = useState(
     searchParams.get('stock') || ''
   );
@@ -100,15 +97,7 @@ const AdminInventory = () => {
 
   const { isSuperAdmin } = useAuth();
 
-  const openPriceModal = (product) => {
-    setSelectedProduct(product);
-    setIsPriceModalOpen(true);
-  };
-
-  const handlePriceSaved = (newPrice) => {
-    // EditPriceModal already performs the API call. Parent should only update local state.
-    setProducts((prev) => prev.map((p) => (p.product_id === selectedProduct.product_id ? { ...p, product_price: Number(newPrice) } : p)));
-  };
+  // price editing now moved to product detail page
 
   // Update URL params
   useEffect(() => {
@@ -304,17 +293,8 @@ const AdminInventory = () => {
                       className="btn btn-primary btn-small"
                       style={{ width: '90%', textAlign: 'center', padding: '8px 15px', fontSize: '0.9rem' }}
                     >
-                      Manage Stock
+                      Manage Product
                     </Link>
-                    {isSuperAdmin && (
-                      <button
-                        className="edit-price-btn"
-                        style={{ width: '90%', marginTop: '8px' }}
-                        onClick={() => openPriceModal(product)}
-                      >
-                        Edit Price
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
@@ -322,14 +302,7 @@ const AdminInventory = () => {
           )}
         </div>
       </main>
-      {isPriceModalOpen && selectedProduct && (
-        <EditPriceModal
-          product={selectedProduct}
-          open={isPriceModalOpen}
-          onClose={() => setIsPriceModalOpen(false)}
-          onSaved={(newPrice) => { handlePriceSaved(newPrice); setIsPriceModalOpen(false); }}
-        />
-      )}
+      {/* Price edit modal is available on product detail page for super admins */}
     </div>
   );
 };

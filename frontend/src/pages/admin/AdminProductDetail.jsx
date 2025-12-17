@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '../../services';
+import { useAuth } from '../../context/AuthContext';
+import EditPriceModal from '../../components/EditPriceModal';
 
 const AdminProductDetail = () => {
   const { id } = useParams();
@@ -11,6 +13,9 @@ const AdminProductDetail = () => {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+
+  const { isSuperAdmin } = useAuth();
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -143,6 +148,16 @@ const AdminProductDetail = () => {
               </button>
             </div>
           </form>
+          {isSuperAdmin && (
+            <div style={{ marginTop: '12px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setIsPriceModalOpen(true)}
+              >
+                Edit Price
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="product-description" style={{ marginTop: '30px' }}>
@@ -161,6 +176,19 @@ const AdminProductDetail = () => {
           </p>
         </div>
       </div>
+      {isPriceModalOpen && (
+        <EditPriceModal
+          product={product}
+          open={isPriceModalOpen}
+          onClose={() => setIsPriceModalOpen(false)}
+          onSaved={(newPrice) => {
+            setProduct(prev => ({ ...prev, product_price: Number(newPrice) }));
+            setIsPriceModalOpen(false);
+            setSuccess('Price updated successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+          }}
+        />
+      )}
     </main>
   );
 };
