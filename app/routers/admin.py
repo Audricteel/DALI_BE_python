@@ -280,6 +280,85 @@ async def update_price(
     return {"message": "Price updated", "product_id": product_id, "old_price": old_price, "new_price": float(product.product_price)}
 
 
+@router.put("/products/{product_id}")
+async def update_product(
+    product_id: int,
+    product_name: Optional[str] = Form(None),
+    product_description: Optional[str] = Form(None),
+    product_category: Optional[str] = Form(None),
+    product_subcategory: Optional[str] = Form(None),
+    image: UploadFile = File(None),
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """Update product details (name, description, category, subcategory, image).
+    Image upload is optional and stored under frontend/public/images/products; DB stores filename only.
+    """
+    product = db.query(Product).filter(Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    changes = {}
+    # Compare and set fields
+    if product_name is not None and product.product_name != product_name:
+        changes['product_name'] = {'old': product.product_name, 'new': product_name}
+        product.product_name = product_name
+    if product_description is not None and product.product_description != product_description:
+        changes['product_description'] = {'old': product.product_description, 'new': product_description}
+        product.product_description = product_description
+    if product_category is not None and product.product_category != product_category:
+        changes['product_category'] = {'old': product.product_category, 'new': product_category}
+        product.product_category = product_category
+    if product_subcategory is not None and product.product_subcategory != product_subcategory:
+        changes['product_subcategory'] = {'old': product.product_subcategory, 'new': product_subcategory}
+        product.product_subcategory = product_subcategory
+
+    # handle image upload
+    if image:
+        try:
+            images_dir = os.path.join(os.getcwd(), 'frontend', 'public', 'images', 'products')
+            os.makedirs(images_dir, exist_ok=True)
+            orig_name = os.path.basename(image.filename)
+            ext = os.path.splitext(orig_name)[1]
+            fname = f"{uuid.uuid4().hex}{ext}"
+            dest = os.path.join(images_dir, fname)
+            content = await image.read()
+            with open(dest, 'wb') as f:
+                f.write(content)
+            new_image_name = fname
+            # record change
+            changes['image'] = {'old': product.image, 'new': new_image_name}
+            product.image = new_image_name
+        except Exception:
+            pass
+
+    if changes:
+        db.add(product)
+        db.commit()
+
+        # Audit log entry
+        try:
+            actor_email = getattr(admin, 'account_email', None) or getattr(admin, 'email', None) or 'unknown'
+            actor = db.query(Account).filter(Account.account_email == actor_email).first()
+            actor_name = actor.full_name if actor else None
+            audit_details = {'changes': changes}
+            if actor_name:
+                audit_details['actor_name'] = actor_name
+            audit = AuditLog(
+                actor_email=actor_email,
+                action='UPDATE_PRODUCT',
+                entity_type='product',
+                entity_id=product_id,
+                details=json.dumps(audit_details)
+            )
+            db.add(audit)
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    return {"message": "Product updated", "product_id": product_id, "changes": changes}
+
+
 @router.get("/orders", response_model=List[OrderResponse])
 async def get_all_orders(
     search: Optional[str] = Query(None),

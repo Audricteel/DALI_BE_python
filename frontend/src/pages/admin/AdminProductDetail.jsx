@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productService } from '../../services';
+import adminService from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import EditPriceModal from '../../components/EditPriceModal';
 
@@ -16,6 +17,14 @@ const AdminProductDetail = () => {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
   const { isSuperAdmin } = useAuth();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editSubcategory, setEditSubcategory] = useState('');
+  const [editImageFile, setEditImageFile] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -24,6 +33,11 @@ const AdminProductDetail = () => {
         const product = await productService.getProduct(id);
         setProduct(product);
         setNewStock(product.product_quantity);
+        // init edit fields
+        setEditName(product.product_name);
+        setEditDescription(product.product_description || '');
+        setEditCategory(product.product_category || '');
+        setEditSubcategory(product.product_subcategory || '');
       } catch (err) {
         setError('Failed to load product');
         console.error('Error loading product:', err);
@@ -33,6 +47,36 @@ const AdminProductDetail = () => {
     };
     loadProduct();
   }, [id]);
+
+  // load categories for edit form
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await productService.getCategories();
+        setCategories(data.categories || data || []);
+      } catch (err) {
+        console.error('Failed to load categories for edit form', err);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (editCategory) {
+        try {
+          const data = await productService.getSubcategories(editCategory);
+          setSubcategories(data.subcategories || data || []);
+        } catch (err) {
+          console.error('Failed to load subcategories', err);
+          setSubcategories([]);
+        }
+      } else {
+        setSubcategories([]);
+      }
+    };
+    loadSubcategories();
+  }, [editCategory]);
 
   const handleUpdateStock = async (e) => {
     e.preventDefault();
@@ -149,12 +193,18 @@ const AdminProductDetail = () => {
             </div>
           </form>
           {isSuperAdmin && (
-            <div style={{ marginTop: '12px' }}>
+            <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
               <button
                 className="btn btn-secondary"
                 onClick={() => setIsPriceModalOpen(true)}
               >
                 Edit Price
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => setIsEditOpen((s) => !s)}
+              >
+                {isEditOpen ? 'Cancel Edit' : 'Edit Product'}
               </button>
             </div>
           )}
@@ -188,6 +238,74 @@ const AdminProductDetail = () => {
             setTimeout(() => setSuccess(''), 3000);
           }}
         />
+      )}
+
+      {isEditOpen && (
+        <div className="edit-product-form" style={{ marginTop: '30px' }}>
+          <h3>Edit Product</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '640px' }}>
+            <label>Product Name</label>
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} />
+
+            <label>Description</label>
+            <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} />
+
+            <label>Category</label>
+            <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
+              <option value="">-- Select category --</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+
+            {subcategories.length > 0 && (
+              <>
+                <label>Subcategory</label>
+                <select value={editSubcategory} onChange={(e) => setEditSubcategory(e.target.value)}>
+                  <option value="">-- Select subcategory --</option>
+                  {subcategories.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <label>Image</label>
+            <input type="file" accept="image/*" onChange={(e) => setEditImageFile(e.target.files[0])} />
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn btn-primary"
+                onClick={async () => {
+                  setError('');
+                  setSuccess('');
+                  try {
+                    const payload = {
+                      product_name: editName,
+                      product_description: editDescription,
+                      product_category: editCategory,
+                      product_subcategory: editSubcategory,
+                      imageFile: editImageFile,
+                    };
+                    await adminService.updateProduct(id, payload);
+                    // refresh local product state
+                    const updated = await productService.getProduct(id);
+                    setProduct(updated);
+                    setSuccess('Product updated successfully');
+                    setIsEditOpen(false);
+                    setTimeout(() => setSuccess(''), 3000);
+                  } catch (err) {
+                    console.error('Failed to update product', err);
+                    setError(err.response?.data?.detail || 'Failed to update product');
+                  }
+                }}
+              >
+                Save Changes
+              </button>
+              <button className="btn muted" onClick={() => setIsEditOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

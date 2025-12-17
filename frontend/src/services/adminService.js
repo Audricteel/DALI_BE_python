@@ -74,6 +74,21 @@ const adminService = {
     });
     return response.data;
   },
+  
+  // Update product details (multipart/form-data with optional image)
+  updateProduct: async (productId, product) => {
+    const form = new FormData();
+    if (product.product_name !== undefined) form.append('product_name', product.product_name);
+    if (product.product_description !== undefined) form.append('product_description', product.product_description);
+    if (product.product_category !== undefined) form.append('product_category', product.product_category);
+    if (product.product_subcategory !== undefined) form.append('product_subcategory', product.product_subcategory);
+    if (product.imageFile) form.append('image', product.imageFile);
+
+    const response = await api.put(`/admin/products/${productId}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 
 export default adminService;
