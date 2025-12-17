@@ -90,6 +90,8 @@ const AdminAudit = () => {
 
   return (
     <div className="container admin-audit-page">
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}></div>
+      <h2>Audit Logs</h2>
       {/* Stats Row */}
       <div className="stats-grid" style={{ marginBottom: 20 }}>
         <div className="stat-card">
