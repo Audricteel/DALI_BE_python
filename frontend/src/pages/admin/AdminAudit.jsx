@@ -89,7 +89,7 @@ const AdminAudit = () => {
   }, [audits, q, eventFilter, range]);
 
   return (
-    <div className="admin-audit-page">
+    <div className="container admin-audit-page">
       {/* Stats Row */}
       <div className="stats-grid" style={{ marginBottom: 20 }}>
         <div className="stat-card">

@@ -414,7 +414,7 @@ body {
     gap: 50px;
     align-items: center;
     background: #fff;
-    padding: 30px;
+    padding: 15px 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     margin-bottom: 20px; 
@@ -422,10 +422,11 @@ body {
 
 .audit-table-wrapper {
     background: #fff;
-    border-radius: 12px;
+    border-radius: 0 0 12px 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    border: 70px solid #eee;
+    border: 0px solid #eee;
+    border-top: none;
 }
 
 .dali-audit-table {     
