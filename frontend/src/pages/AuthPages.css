@@ -36,7 +36,7 @@
 .auth-form-container {
   flex: 1;
   padding: 2rem 3rem;
-  background: #fef7e6; 
+  background: white; 
   position: relative;
 }
 
@@ -67,7 +67,7 @@
 .auth-form-container {
   flex: 1;
   padding: 2rem 3rem;
-  background: #fef7e6;
+  background: white;
   position: relative;
 }
 
